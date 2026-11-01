@@ -3,12 +3,14 @@
 //! - [`theme`]: palettes, the built-in themes, Omarchy detection and live sync.
 //! - [`theme_store`]: the iTerm2-Color-Schemes / Omarchy catalog from GitHub,
 //!   saving and removing downloaded themes.
-//! - [`picker`]: the Theme Select picker's state and fuzzy ranking.
+//! - [`picker`]: Theme Select: state, fuzzy ranking, keys and drawing.
+//! - [`text`]: fitting text into terminal cells.
 //! - [`update`]: the GitHub release check and in-place self-update.
 //!
 //! See `STYLE.md` for the conventions the apps follow.
 
 pub mod picker;
+pub mod text;
 pub mod theme;
 pub mod theme_store;
 pub mod update;

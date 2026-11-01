@@ -24,7 +24,7 @@ Small terminal apps built on vibekit should feel the same.
 
 ## Themes
 - Use `vibekit::theme`: built-ins, user themes in `~/.config/<app>/themes`, and Omarchy sync.
-- Theme Select uses `vibekit::picker`. The app draws it.
+- Theme Select uses `vibekit::picker`: `key` returns an `Action` for the app, `draw` renders inside the app's block, and the app draws the delete question.
 
 ## Releases
 - Tarball `<name>-<os>-<arch>.tar.gz` containing `<name>/<name>`.
