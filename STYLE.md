@@ -1,0 +1,35 @@
+# Shared conventions for vibe apps
+
+Small terminal apps built on vibekit should feel the same.
+
+## Keys
+- **Shift+letter is global.** It works from any pane (e.g. `T` opens Theme Select).
+- **Lowercase acts on the focused pane.** The same letter can mean different things in different panes.
+- `?` opens the help screen. `Esc` closes the top overlay. `q` quits from the main screen.
+- The key bar shows the keys for the focused pane. Change it whenever you change a key.
+
+## Help screen
+- One screen, grouped as Global, then one section per pane. It must list every key.
+- It is generated from the same table as the key bar, so they can't drift apart.
+
+## About / tip panel
+- Shows the name, version, repo link, license, and an optional tip link.
+- Shows "Update available" from `vibekit::update` when a newer release exists.
+
+## Config
+- TOML in `~/.config/<app>/config.toml`.
+- **Config keys match the Settings wording**: a setting called "Show album art" is `show_album_art`.
+- **Tolerate unknown keys.** Skip them with a one-line warning and never fail to start. Keep them on save if you can.
+- Bad values fall back to the default with a warning.
+
+## Themes
+- Use `vibekit::theme`: built-ins, user themes in `~/.config/<app>/themes`, and Omarchy sync.
+- Theme Select uses `vibekit::picker`. The app draws it.
+
+## Releases
+- Tarball `<name>-<os>-<arch>.tar.gz` containing `<name>/<name>`.
+- Set `<NAME>_FAKE_VERSION=0.0.1` to test the update flow.
+
+## Changes
+- Every user-facing change updates Help, the README, the key bar and the CHANGELOG.
+- Tests use demo data or a fake server, never a live service.

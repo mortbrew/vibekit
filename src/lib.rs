@@ -1,0 +1,23 @@
+//! vibekit: the parts the *vibe terminal apps share, kept small and generic.
+//!
+//! - [`theme`]: palettes, the built-in themes, Omarchy detection and live sync.
+//! - [`theme_store`]: the iTerm2-Color-Schemes / Omarchy catalog from GitHub,
+//!   saving and removing downloaded themes.
+//! - [`picker`]: the Theme Select picker's state and fuzzy ranking.
+//! - [`update`]: the GitHub release check and in-place self-update.
+//!
+//! See `STYLE.md` for the conventions the apps follow.
+
+pub mod picker;
+pub mod theme;
+pub mod theme_store;
+pub mod update;
+
+/// A fresh, empty folder for one test.
+#[cfg(test)]
+pub(crate) fn temp_dir(name: &str) -> std::path::PathBuf {
+    let dir = std::env::temp_dir().join(format!("vibekit-test-{}-{name}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
