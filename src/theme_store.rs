@@ -199,7 +199,8 @@ pub fn remove(dir: &Path, slug: &str) -> std::io::Result<()> {
     }
 }
 
-pub(crate) fn demo_catalog() -> Vec<Entry> {
+/// The catalog shown in demo mode (no network); handy for app tests.
+pub fn demo_catalog() -> Vec<Entry> {
     [
         (Source::Omarchy, "nord"),
         (Source::Omarchy, "rose-pine"),
