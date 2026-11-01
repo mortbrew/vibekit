@@ -7,4 +7,4 @@ Shared pieces for small ratatui apps (boxvibe, ...):
 - `picker`: Theme Select state (tabs, fuzzy filter); the app draws it
 - `update`: GitHub self-update check and install via `Release { name, repo, version }`
 
-See STYLE.md for conventions. Local only; not published.
+See STYLE.md for conventions. Local only; not published. MIT licensed (see LICENSE-MIT).
