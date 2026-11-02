@@ -16,6 +16,7 @@ use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Modifier};
+use std::any::Any;
 use std::time::{Duration, Instant};
 
 /// What a dialog says after a key.
@@ -30,7 +31,9 @@ pub enum Response {
 }
 
 /// One modal dialog.
-pub trait Dialog {
+/// `Any` lets the app find its own dialog types on the stack again
+/// ([`DialogStack::top`], [`DialogStack::find_mut`]), e.g. to update one as data arrives.
+pub trait Dialog: Any {
     /// Handles a key (Esc never arrives: the stack closes the dialog first).
     fn key(&mut self, key: KeyEvent) -> Response;
     /// Draws itself over `screen` (already dimmed).
@@ -88,6 +91,43 @@ impl DialogStack {
         self.stack.is_empty()
     }
 
+    /// The topmost dialog, if it is a `T`.
+    pub fn top<T: Dialog>(&self) -> Option<&T> {
+        let top: &dyn Any = self.stack.last()?.as_ref();
+        top.downcast_ref()
+    }
+
+    /// The topmost dialog, if it is a `T`, to change.
+    pub fn top_mut<T: Dialog>(&mut self) -> Option<&mut T> {
+        let top: &mut dyn Any = self.stack.last_mut()?.as_mut();
+        top.downcast_mut()
+    }
+
+    /// The highest open `T`, anywhere on the stack.
+    pub fn find<T: Dialog>(&self) -> Option<&T> {
+        self.stack.iter().rev().find_map(|d| (d.as_ref() as &dyn Any).downcast_ref())
+    }
+
+    /// The highest open `T`, anywhere on the stack, to change.
+    pub fn find_mut<T: Dialog>(&mut self) -> Option<&mut T> {
+        self.stack.iter_mut().rev().find_map(|d| (d.as_mut() as &mut dyn Any).downcast_mut())
+    }
+
+    /// True if a `T` is open anywhere on the stack.
+    pub fn has<T: Dialog>(&self) -> bool {
+        self.find::<T>().is_some()
+    }
+
+    /// Closes every open `T`; true if there was one.
+    pub fn remove<T: Dialog>(&mut self) -> bool {
+        let before = self.stack.len();
+        self.stack.retain(|d| !(d.as_ref() as &dyn Any).is::<T>());
+        if self.stack.is_empty() {
+            self.opened = None;
+        }
+        self.stack.len() != before
+    }
+
     /// Sends a key to the topmost dialog. `None` when nothing is open (the key
     /// is the app's). Esc closes the top; `Close` and `Answer` close it too.
     pub fn key(&mut self, key: KeyEvent) -> Option<Response> {
@@ -109,6 +149,15 @@ impl DialogStack {
     /// True while the fade is still moving: keep redrawing until then.
     pub fn animating(&self, now: Instant) -> bool {
         self.opened.is_some_and(|o| now.saturating_duration_since(o) < FADE)
+    }
+
+    /// Draws every dialog bottom first, with no dimming: for an app that dims
+    /// the screen itself (boxvibe fades its album art its own way).
+    pub fn draw_dialogs(&self, frame: &mut Frame, palette: &Palette) {
+        let area = frame.area();
+        for dialog in &self.stack {
+            dialog.draw(frame, area, palette);
+        }
     }
 
     /// Dims the screen, then draws every dialog bottom first (each lower one
@@ -239,6 +288,21 @@ pub(crate) mod tests {
         assert_eq!(buf[(0, 0)].fg, Color::Rgb(100, 100, 100));
         assert_eq!(buf[(0, 0)].bg, Color::Rgb(0, 0, 0));
         assert!(buf[(1, 0)].modifier.contains(Modifier::DIM));
+    }
+
+    #[test]
+    fn dialogs_are_found_again_by_type() {
+        let mut stack = DialogStack::new();
+        let now = Instant::now();
+        stack.push(Help::new(vec![]), now);
+        stack.push(Confirm::quit("x"), now);
+        assert!(stack.top::<Confirm>().is_some() && stack.top::<Help>().is_none());
+        assert!(stack.has::<Help>());
+        stack.find_mut::<Help>().unwrap().scroll = 3;
+        assert_eq!(stack.find::<Help>().unwrap().scroll, 3);
+        assert!(stack.remove::<Confirm>() && !stack.remove::<Confirm>());
+        assert_eq!(stack.len(), 1);
+        assert!(stack.remove::<Help>() && !stack.is_open() && stack.dim_at(now) == 0.0);
     }
 
     #[test]

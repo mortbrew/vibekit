@@ -1,7 +1,7 @@
 //! The `?` help overlay: every key, in sections (Global first, then one per pane).
 
 use super::{Dialog, Response, centered};
-use crate::text::{fit, pad, safe_width};
+use crate::text::{fit, pad, safe_width, truncate};
 use crate::theme::Palette;
 use ratatui::Frame;
 use ratatui::crossterm::event::{KeyCode, KeyEvent};
@@ -52,7 +52,8 @@ impl Help {
             for (k, d) in &s.keys {
                 out.push(Line::from(vec![
                     Span::styled(
-                        format!("  {} ", pad(&fit(k, key_w + 1), key_w)),
+                        // Keys are the app's own text, icons included: cut, never cleaned.
+                        format!("  {} ", pad(&truncate(k, key_w), key_w)),
                         Style::new().fg(p.fg).add_modifier(Modifier::BOLD),
                     ),
                     Span::styled(fit(d, width.saturating_sub(key_w + 3)), Style::new().fg(p.muted)),
@@ -79,7 +80,16 @@ impl Dialog for Help {
     }
 
     fn draw(&self, frame: &mut Frame, screen: Rect, p: &Palette) {
-        let width = 72.min(screen.width.saturating_sub(4)).max(screen.width.min(16));
+        // As wide as the longest line needs (at least 72), never wider than the screen.
+        let key_w = self.sections.iter().flat_map(|s| &s.keys).map(|(k, _)| safe_width(k)).max().unwrap_or(0);
+        let longest = self
+            .sections
+            .iter()
+            .flat_map(|s| s.keys.iter().map(|(_, d)| key_w + 3 + safe_width(d)).chain([safe_width(&s.title)]))
+            .max()
+            .unwrap_or(0);
+        let want = u16::try_from(longest + 4).unwrap_or(u16::MAX).max(72);
+        let width = want.min(screen.width.saturating_sub(4)).max(screen.width.min(16));
         let inner = usize::from(width.saturating_sub(4));
         let all = self.lines(inner, p);
         let room = usize::from(screen.height.saturating_sub(6)).max(1);

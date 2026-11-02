@@ -54,3 +54,7 @@ toasts.draw(frame, area, &palette, now);         // at most MAX (3), bottom-righ
 
 See STYLE.md for conventions (global keys, dialogs, settings) and CHANGELOG.md for changes.
 Local only; not published. MIT licensed (see LICENSE-MIT).
+
+### Finding a dialog again
+
+`Dialog` is `Any`, so `stack.top::<T>()`, `find::<T>()` / `find_mut::<T>()`, `has::<T>()` and `remove::<T>()` reach an open dialog by type (e.g. to update a list it shows). `stack.draw_dialogs(frame, &palette)` draws without dimming the app behind.

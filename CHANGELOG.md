@@ -1,6 +1,9 @@
 # Changelog
 
 ## 0.2.0 (unreleased)
+
+- `Dialog: Any`: `DialogStack::top`, `top_mut`, `find`, `find_mut`, `has` and `remove` reach a dialog by its type; `draw_dialogs` draws the stack without the dim, for apps that dim themselves.
+- Help is as wide as its longest line (at least 72, at most the screen) and keeps icons in its keys.
 ### Added
 - `dialog`: `DialogStack` (a modal stack that dims the screen behind it with a 150 ms fade), the `Dialog` trait and `Response`.
 - `dialog::Confirm`: a yes/no question with `y`/`n`, Enter on the chosen button (it starts on No) and Esc.
