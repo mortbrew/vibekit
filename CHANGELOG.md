@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- STYLE: the shortcuts common core is now exactly the approved shared list (Q, Esc, ?, Tab/Shift+Tab, j/k ↑↓, PgUp/PgDn, Enter, /, Shift+O/Shift+A, ., Shift = global / lowercase = pane). `g`/`G` and `Ctrl+c` quit-at-once leave the core and are app-specific; all other shortcuts are app-specific.
+
 ## 0.2.0 (unreleased)
 
 - `Dialog: Any`: `DialogStack::top`, `top_mut`, `find`, `find_mut`, `has` and `remove` reach a dialog by its type; `draw_dialogs` draws the stack without the dim, for apps that dim themselves.

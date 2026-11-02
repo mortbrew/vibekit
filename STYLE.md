@@ -3,23 +3,23 @@
 Small terminal apps built on vibekit should feel the same.
 
 ## Global keys
-Every vibe app shares this core. Popups and dialogs take keys first, so inside one a key may mean something local (e.g. `G` = End in a list).
+Every vibe app shares exactly this core, and nothing more. **All other shortcuts are app-specific**; keep the standard set this small. Popups and dialogs take keys first, so inside one a key may mean something local.
 
 | Key | Does |
 |---|---|
-| `Q` | Quit. **It is the only quit key.** If quitting would lose something it opens `Confirm::quit`, where a second `Q` (or `y`, or Enter on Quit) confirms and `n`/Esc stays. |
-| `Ctrl+c` | Quit at once, no question (terminal convention). |
-| `?` | Open help; `?` again (or Esc) closes it. |
-| `Esc` | Close the topmost dialog or popup; on the main screen, go back (to the menu, out of search). Esc never quits. |
+| `Q` | Quit; a second `Q` confirms. Lowercase `q` is unbound. |
+| `Esc` | Close the top dialog / go back. |
+| `?` | Open and close help. |
 | `Tab` / `Shift+Tab` | Next / previous pane. |
-| `j` `k` `↑` `↓` | Move in a list. `g`/`G` (`Home`/`End`) jump to the ends inside lists and popups. |
-| `Enter` | Open or use the selected row; in a `Confirm`, press the chosen button. |
-| `Shift+O` / `Shift+A` | Settings / About. |
+| `j` `k` / `↑` `↓` | Move up and down. |
+| `PgUp` / `PgDn` | Scroll a page. |
+| `Enter` | Open or use the selection. |
+| `/` | Start search or filter. |
+| `Shift+O` / `Shift+A` | Open Settings / About. |
+| `.` | Open the action menu. |
 
-- **Shift+letter is global; lowercase acts on the focused pane.**
-- **Lowercase `q` is unbound.** It never quits or closes anything, so a stray keypress is harmless.
-- **No "any key closes".** Dialogs close with Esc (help also with `?`); keys a dialog doesn't use do nothing.
-- **Confirms answer only on `y`/`n`, Enter or Esc** (plus `Q` on the quit question). Other keys are ignored rather than taken as No.
+- **Shift+letter keys are global; lowercase keys act on the current pane.**
+- Anything else (jump-to-end keys, a no-question quit such as `Ctrl+c`, media keys) is up to each app.
 
 ### Open questions
 These are not settled yet; don't copy either answer into a new app without checking.
