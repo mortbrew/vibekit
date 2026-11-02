@@ -23,7 +23,7 @@ impl Section {
     }
 }
 
-/// The help screen. j/k ↑↓ PgUp/PgDn Home/End scroll; `?` or Esc closes.
+/// The help screen. j/k ↑↓ PgUp/PgDn Home/End scroll; `?` or Esc closes (never `q`).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Help {
     pub title: String,
@@ -66,7 +66,7 @@ impl Help {
 impl Dialog for Help {
     fn key(&mut self, key: KeyEvent) -> Response {
         match key.code {
-            KeyCode::Char('?') | KeyCode::Char('q') => return Response::Close,
+            KeyCode::Char('?') => return Response::Close,
             KeyCode::Char('j') | KeyCode::Down => self.scroll += 1,
             KeyCode::Char('k') | KeyCode::Up => self.scroll = self.scroll.saturating_sub(1),
             KeyCode::PageDown | KeyCode::Char(' ') => self.scroll += 10,
@@ -134,6 +134,7 @@ mod tests {
         h.key(key(KeyCode::End));
         let (text, _) = render(60, 9, |f| h.draw(f, f.area(), &TOKYO_NIGHT));
         assert!(text.contains("Play") && text.contains("6–8 of 8"), "{text}");
+        assert_eq!(h.key(key(KeyCode::Char('q'))), Response::Keep, "lowercase q never closes");
         assert_eq!(h.key(key(KeyCode::Char('?'))), Response::Close);
     }
 }

@@ -22,6 +22,10 @@ pub struct Confirm {
     pub no: String,
     /// Which button Enter presses.
     pub on_yes: bool,
+    /// Another key that also says yes (`Q` on the quit question).
+    pub also_yes: Option<char>,
+    /// The line under the buttons, if any.
+    pub hint: Option<String>,
 }
 
 impl Confirm {
@@ -33,12 +37,21 @@ impl Confirm {
             yes: "Yes".into(),
             no: "No".into(),
             on_yes: false,
+            also_yes: None,
+            hint: None,
         }
     }
 
-    /// The standard quit question for `app`.
+    /// The standard quit question for `app`: `Q` (the only quit key) opens
+    /// it and `Q` again confirms; `y`/`n` work too; lowercase `q` does nothing.
     pub fn quit(app: &str) -> Self {
-        Self { title: "Quit".into(), yes: "Quit".into(), ..Self::new("quit", format!("Quit {app}?")) }
+        Self {
+            title: "Quit".into(),
+            yes: "Quit".into(),
+            also_yes: Some('Q'),
+            hint: Some("Q again to quit · Esc stay".into()),
+            ..Self::new("quit", format!("Quit {app}?"))
+        }
     }
 
     pub fn title(mut self, title: impl Into<String>) -> Self {
@@ -60,6 +73,7 @@ impl Confirm {
 impl Dialog for Confirm {
     fn key(&mut self, key: KeyEvent) -> Response {
         match key.code {
+            KeyCode::Char(c) if Some(c) == self.also_yes => self.answer(true),
             KeyCode::Char('y' | 'Y') => self.answer(true),
             KeyCode::Char('n' | 'N') => self.answer(false),
             KeyCode::Enter => self.answer(self.on_yes),
@@ -93,6 +107,9 @@ impl Dialog for Confirm {
             Span::raw("   "),
             button(&self.no, 'n', !self.on_yes),
         ]));
+        if let Some(hint) = &self.hint {
+            lines.push(Line::from(Span::styled(crate::text::fit(hint, inner + 1), Style::new().fg(p.muted))));
+        }
         lines.push(Line::from(""));
         let area = centered(screen, width, lines.len() as u16 + 2);
         frame.render_widget(Clear, area);
@@ -118,6 +135,19 @@ mod tests {
         assert_eq!(c.key(key(KeyCode::Enter)), Response::Answer { id: "quit".into(), yes: true });
         assert_eq!(c.key(key(KeyCode::Char('n'))), Response::Answer { id: "quit".into(), yes: false });
         assert_eq!(c.key(key(KeyCode::Char('x'))), Response::Keep);
+    }
+
+    #[test]
+    fn the_quit_question_takes_capital_q_and_ignores_lowercase_q() {
+        let yes = Response::Answer { id: "quit".into(), yes: true };
+        let mut c = Confirm::quit("boxvibe");
+        assert_eq!(c.key(key(KeyCode::Char('q'))), Response::Keep, "lowercase q does nothing");
+        assert_eq!(c.key(key(KeyCode::Char('Q'))), yes);
+        assert_eq!(c.key(key(KeyCode::Char('y'))), yes);
+        assert_eq!(c.key(key(KeyCode::Char('n'))), Response::Answer { id: "quit".into(), yes: false });
+        assert_eq!(Confirm::new("del", "Delete?").key(key(KeyCode::Char('Q'))), Response::Keep, "only quit takes Q");
+        let (text, _) = render(60, 12, |f| c.draw(f, f.area(), &TOKYO_NIGHT));
+        assert!(text.contains("Quit boxvibe?") && text.contains("Q again to quit"), "{text}");
     }
 
     #[test]

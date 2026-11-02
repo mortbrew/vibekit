@@ -2,10 +2,17 @@
 
 Small terminal apps built on vibekit should feel the same.
 
+## Global keys
+These are the same in every vibe app.
+- **`Q` (capital) quits, and it is the only quit key.** If quitting would lose something, it opens `Confirm::quit`, where `Q` again (or `y`) confirms.
+- **Esc closes the topmost dialog** (on the main screen it backs out of the pane or search).
+- **`?` opens help, and `?` closes it** (Esc closes it too).
+- **Lowercase `q` is unbound globally.** It never quits or closes anything, so a stray keypress is harmless. Panes may use it only for a pane-local action, and preferably not at all.
+
 ## Keys
 - **Shift+letter is global.** It works from any pane (e.g. `T` opens Theme Select).
 - **Lowercase acts on the focused pane.** The same letter can mean different things in different panes.
-- `?` opens the help screen. `Esc` closes the top overlay. `q` quits from the main screen.
+- See Global keys above for `Q`, Esc and `?`.
 - The key bar shows the keys for the focused pane. Change it whenever you change a key.
 
 ## Help screen
@@ -18,7 +25,7 @@ Small terminal apps built on vibekit should feel the same.
 
 ## Dialogs, help and toasts
 - Dialogs open on a `vibekit::dialog::DialogStack`, which dims the screen behind them (a 150 ms fade). While one is open it gets every key.
-- **Esc closes the topmost dialog.** `?` opens help from anywhere (help also closes with `?`).
+- **Esc closes the topmost dialog.** `?` opens help from anywhere (help also closes with `?`; lowercase `q` does not).
 - Yes/no questions use `Confirm`. `y`/`n` answer at once, and Enter presses the chosen button, which starts on No. Quitting asks only when something would be lost (a download, unsaved changes).
 - Toasts (`vibekit::toast`) are for things that happened, not questions. They are short, timed and stacked bottom-right, and they never take keys.
 
