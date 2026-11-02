@@ -104,6 +104,28 @@ pub fn pad(text: &str, cells: usize) -> String {
     format!("{text}{}", " ".repeat(cells.saturating_sub(w)))
 }
 
+/// `text` word-wrapped to `width` cells, at most `max` lines; the last one
+/// ends in "…" when there was more.
+pub fn wrap(text: &str, width: usize, max: usize) -> Vec<String> {
+    let width = width.max(1);
+    let mut lines: Vec<String> = Vec::new();
+    for word in clean(text).split_whitespace() {
+        match lines.last_mut() {
+            Some(line) if safe_width(line) + 1 + safe_width(word) <= width => {
+                line.push(' ');
+                line.push_str(word);
+            }
+            _ => lines.push(truncate(word, width)),
+        }
+    }
+    if lines.len() > max {
+        lines.truncate(max.max(1));
+        let last = lines.pop().unwrap_or_default();
+        lines.push(truncate(&format!("{last} …"), width));
+    }
+    lines
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -119,5 +141,13 @@ mod tests {
     fn clean_drops_controls_and_zero_width() {
         assert_eq!(clean("a\tb\u{200B}c"), "a bc");
         assert_eq!(pad("ab", 4), "ab  ");
+    }
+
+    #[test]
+    fn wrap_breaks_on_words_and_marks_the_cut() {
+        assert_eq!(wrap("one two three", 7, 5), vec!["one two", "three"]);
+        let cut = wrap("one two three four", 7, 1);
+        assert_eq!(cut.len(), 1);
+        assert!(cut[0].ends_with('…'), "{cut:?}");
     }
 }
