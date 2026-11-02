@@ -3,11 +3,29 @@
 Small terminal apps built on vibekit should feel the same.
 
 ## Global keys
-These are the same in every vibe app.
-- **`Q` (capital) quits, and it is the only quit key.** If quitting would lose something, it opens `Confirm::quit`, where `Q` again (or `y`) confirms.
-- **Esc closes the topmost dialog** (on the main screen it backs out of the pane or search).
-- **`?` opens help, and `?` closes it** (Esc closes it too).
-- **Lowercase `q` is unbound globally.** It never quits or closes anything, so a stray keypress is harmless. Panes may use it only for a pane-local action, and preferably not at all.
+Every vibe app shares this core. Popups and dialogs take keys first, so inside one a key may mean something local (e.g. `G` = End in a list).
+
+| Key | Does |
+|---|---|
+| `Q` | Quit. **It is the only quit key.** If quitting would lose something it opens `Confirm::quit`, where a second `Q` (or `y`, or Enter on Quit) confirms and `n`/Esc stays. |
+| `Ctrl+c` | Quit at once, no question (terminal convention). |
+| `?` | Open help; `?` again (or Esc) closes it. |
+| `Esc` | Close the topmost dialog or popup; on the main screen, go back (to the menu, out of search). Esc never quits. |
+| `Tab` / `Shift+Tab` | Next / previous pane. |
+| `j` `k` `↑` `↓` | Move in a list. `g`/`G` (`Home`/`End`) jump to the ends inside lists and popups. |
+| `Enter` | Open or use the selected row; in a `Confirm`, press the chosen button. |
+| `Shift+O` / `Shift+A` | Settings / About. |
+
+- **Shift+letter is global; lowercase acts on the focused pane.**
+- **Lowercase `q` is unbound.** It never quits or closes anything, so a stray keypress is harmless.
+- **No "any key closes".** Dialogs close with Esc (help also with `?`); keys a dialog doesn't use do nothing.
+- **Confirms answer only on `y`/`n`, Enter or Esc** (plus `Q` on the quit question). Other keys are ignored rather than taken as No.
+
+### Open questions
+These are not settled yet; don't copy either answer into a new app without checking.
+- **`G`:** boxvibe uses Shift+G for Genres globally, but `G` is End inside lists. Allowed for now because popups shadow global keys.
+- **`X` Shuffle:** a Shift letter, but boxvibe scopes it to the pane. Should it be global, or should it get a lowercase key?
+- **`p` / space pause:** lowercase, but acts from any pane in boxvibe. Should "space/p = play/pause everywhere" be a named media exception?
 
 ## Keys
 - **Shift+letter is global.** It works from any pane (e.g. `T` opens Theme Select).
