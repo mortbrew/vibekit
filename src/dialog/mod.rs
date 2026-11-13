@@ -4,9 +4,11 @@
 //! [`DialogStack::key`] first; Esc always closes the topmost dialog. Draw the
 //! app as usual, then [`DialogStack::draw`] on top.
 
+mod ask;
 mod confirm;
 mod help;
 
+pub use ask::Ask;
 pub use confirm::Confirm;
 pub use help::{Help, Section};
 
@@ -43,6 +45,8 @@ pub trait Dialog: Any {
 /// How long the background takes to dim, and how far it goes (0–1).
 pub const FADE: Duration = Duration::from_millis(150);
 pub const DIM: f32 = 0.55;
+/// How much chroma remains when fully dimmed (0 = grey, 1 = full colour).
+pub const DIM_SATURATION: f32 = 0.5;
 
 /// Open dialogs, bottom first.
 #[derive(Default)]
@@ -151,8 +155,8 @@ impl DialogStack {
         self.opened.is_some_and(|o| now.saturating_duration_since(o) < FADE)
     }
 
-    /// Draws every dialog bottom first, with no dimming: for an app that dims
-    /// the screen itself (boxvibe fades its album art its own way).
+    /// Draws every dialog bottom first, with no dimming: for an app that already
+    /// dimmed the screen (e.g. overlays that share [`dim`]).
     pub fn draw_dialogs(&self, frame: &mut Frame, palette: &Palette) {
         let area = frame.area();
         for dialog in &self.stack {
@@ -173,7 +177,9 @@ impl DialogStack {
 }
 
 /// Fades every cell in `area` towards `toward` by `amount` (0–1). RGB colours
-/// are blended; others get the DIM modifier once `amount` passes a third.
+/// are desaturated then blended; others get the DIM modifier once `amount`
+/// passes a third. Apps that dim their own overlays (before
+/// [`DialogStack::draw_dialogs`]) should call this with the same `toward`.
 pub fn dim(buf: &mut Buffer, area: Rect, amount: f32, toward: Color) {
     if amount <= 0.0 {
         return;
@@ -197,17 +203,27 @@ pub fn dim(buf: &mut Buffer, area: Rect, amount: f32, toward: Color) {
     }
 }
 
-/// `from` moved `amount` of the way to `to`; `None` unless both are RGB
-/// (`Reset` counts as `to`, so a default background stays put).
+/// `from` desaturated then moved `amount` of the way to `to`; `None` unless
+/// `to` is RGB (`Reset` stays put so a default background is unchanged).
 fn blend(from: Color, to: Color, amount: f32) -> Option<Color> {
     let Color::Rgb(tr, tg, tb) = to else { return None };
+    if from == to {
+        return Some(from);
+    }
+    let (tr, tg, tb) = (f32::from(tr), f32::from(tg), f32::from(tb));
     let (fr, fg, fb) = match from {
-        Color::Rgb(r, g, b) => (r, g, b),
-        Color::Reset => (tr, tg, tb),
+        Color::Rgb(r, g, b) => (f32::from(r), f32::from(g), f32::from(b)),
+        Color::Reset => return Some(Color::Reset),
         _ => return None,
     };
-    let mix = |a: u8, b: u8| (f32::from(a) + (f32::from(b) - f32::from(a)) * amount).round() as u8;
-    Some(Color::Rgb(mix(fr, tr), mix(fg, tg), mix(fb, tb)))
+    let grey = 0.299 * fr + 0.587 * fg + 0.114 * fb;
+    let sat = 1.0 - amount * (1.0 - DIM_SATURATION);
+    let brightness = 1.0 - amount;
+    let fade = |c: f32, base: f32| {
+        let c = grey + (c - grey) * sat;
+        (base + (c - base) * brightness).round().clamp(0.0, 255.0) as u8
+    };
+    Some(Color::Rgb(fade(fr, tr), fade(fg, tg), fade(fb, tb)))
 }
 
 /// A rectangle `width` × `height` centred in `area` (clamped to it).
@@ -285,8 +301,9 @@ pub(crate) mod tests {
         buf[(1, 0)].set_fg(Color::Red);
         let area = buf.area;
         dim(&mut buf, area, 0.5, Color::Rgb(0, 0, 0));
+        // Grey stays grey; amount 0.5 keeps half the brightness toward black.
         assert_eq!(buf[(0, 0)].fg, Color::Rgb(100, 100, 100));
-        assert_eq!(buf[(0, 0)].bg, Color::Rgb(0, 0, 0));
+        assert_eq!(buf[(0, 0)].bg, Color::Reset);
         assert!(buf[(1, 0)].modifier.contains(Modifier::DIM));
     }
 

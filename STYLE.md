@@ -21,8 +21,8 @@ Every vibe app shares exactly this core, and nothing more. **All other shortcuts
 - **Shift+letter keys are global; lowercase keys act on the current pane.**
 - Anything else (jump-to-end keys, a no-question quit such as `Ctrl+c`, media keys) is up to each app.
 
-### Open questions
-These are not settled yet; don't copy either answer into a new app without checking.
+### Open questions (boxvibe only — not kit rules)
+These are unsettled **boxvibe** key fights; do not copy them into another *vibe app or into vibekit code without checking.
 - **`G`:** boxvibe uses Shift+G for Genres globally, but `G` is End inside lists. Allowed for now because popups shadow global keys.
 - **`X` Shuffle:** a Shift letter, but boxvibe scopes it to the pane. Should it be global, or should it get a lowercase key?
 - **`p` / space pause:** lowercase, but acts from any pane in boxvibe. Should "space/p = play/pause everywhere" be a named media exception?
@@ -62,6 +62,7 @@ This is a style rule; each app builds its own screen.
 - **Config keys match the Settings wording**: a setting called "Show album art" is `show_album_art`.
 - **Tolerate unknown keys.** Skip them with a one-line warning and never fail to start. Keep them on save if you can.
 - Bad values fall back to the default with a warning.
+- Private writes use `vibekit::fs::write_private` (mode 600 file, 700 parent, atomic rename).
 
 ## Themes
 - Use `vibekit::theme`: built-ins, user themes in `~/.config/<app>/themes`, and Omarchy sync.

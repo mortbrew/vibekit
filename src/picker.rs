@@ -40,8 +40,6 @@ pub struct ThemePicker {
     pub error: Option<String>,
     /// The scheme being downloaded.
     pub downloading: Option<String>,
-    /// The saved theme `x` asked to delete.
-    pub confirm_delete: Option<String>,
 }
 
 impl ThemePicker {
@@ -57,7 +55,6 @@ impl ThemePicker {
             loading: true,
             error: None,
             downloading: None,
-            confirm_delete: None,
         }
     }
 
@@ -121,8 +118,8 @@ pub enum Action {
     Download(Entry),
     /// Enter on a theme while another is still downloading.
     Busy,
-    /// Delete the saved theme with this slug (the user said yes).
-    Delete(String),
+    /// Ask before deleting the saved theme with this slug (app opens Confirm).
+    AskDelete(String),
 }
 
 /// One step through `len` rows: ±1 wraps around, bigger steps stop at the ends.
@@ -143,19 +140,6 @@ impl ThemePicker {
     /// Handles one key. `saved` are the user's themes (slug, palette);
     /// `installed` is the Installed tab's rows, in order.
     pub fn key(&mut self, key: KeyEvent, saved: &[(String, Palette)], installed: &[String]) -> Action {
-        if let Some(name) = self.confirm_delete.clone() {
-            return match key.code {
-                KeyCode::Char('y') | KeyCode::Enter => {
-                    self.confirm_delete = None;
-                    Action::Delete(name)
-                }
-                KeyCode::Char('n') | KeyCode::Esc => {
-                    self.confirm_delete = None;
-                    Action::None
-                }
-                _ => Action::None,
-            };
-        }
         match key.code {
             KeyCode::Esc => return Action::Close,
             KeyCode::Tab | KeyCode::BackTab => {
@@ -220,7 +204,7 @@ impl ThemePicker {
                     }
                     KeyCode::Char('x') | KeyCode::Delete => {
                         if let Some(name) = installed.get(self.installed_cursor) {
-                            self.confirm_delete = Some(name.clone());
+                            return Action::AskDelete(name.clone());
                         }
                     }
                     _ => {}
@@ -232,9 +216,6 @@ impl ThemePicker {
 
     /// The key bar's caps for the picker (key, what it does).
     pub fn key_caps(&self) -> Vec<(&'static str, &'static str)> {
-        if self.confirm_delete.is_some() {
-            return vec![("y", "Yes, Delete"), ("n Esc", "No")];
-        }
         match self.tab {
             ThemeTab::Search => vec![
                 ("Type", "Fuzzy Search"),
@@ -261,8 +242,8 @@ pub struct View<'a> {
     pub block: Block<'a>,
 }
 
-/// Draws the picker centred on `screen`; returns where it went. A pending
-/// delete question is left to the app (`picker.confirm_delete`), drawn on top.
+/// Draws the picker centred on `screen`; returns where it went. The delete
+/// question is left to the app ([`Action::AskDelete`] → Confirm on DialogStack).
 pub fn draw(frame: &mut Frame, screen: Rect, picker: &ThemePicker, view: View) -> Rect {
     let p = view.palette;
     let installed = view.installed;
@@ -320,7 +301,7 @@ pub fn draw(frame: &mut Frame, screen: Rect, picker: &ThemePicker, view: View) -
         let mut room = rows_room - 1;
         // The built-in themes list at once; GitHub's join them when they come.
         if picker.loading {
-            lines.push(note("Asking GitHub for iTerm2-Color-Schemes…".into()));
+            lines.push(note("Fetching themes…".into()));
             room = room.saturating_sub(1).max(1);
         } else if let Some(e) = &picker.error {
             lines.push(note(format!("No theme list: {}", clean(e))));
@@ -439,19 +420,15 @@ mod tests {
     }
 
     #[test]
-    fn installed_tab_moves_uses_and_deletes_after_asking() {
+    fn installed_tab_moves_uses_and_asks_before_delete() {
         let mut picker = loaded();
         let installed = vec!["a".to_owned(), "b".to_owned()];
         picker.key(key(KeyCode::Tab), &[], &installed);
         assert_eq!(picker.tab, ThemeTab::Installed);
         picker.key(key(KeyCode::Char('j')), &[], &installed);
         assert_eq!(picker.key(key(KeyCode::Enter), &[], &installed), Action::Use("b".into()));
-        picker.key(key(KeyCode::Char('x')), &[], &installed);
-        assert_eq!(picker.confirm_delete.as_deref(), Some("b"));
-        assert_eq!(picker.key_caps()[0], ("y", "Yes, Delete"));
-        assert_eq!(picker.key(key(KeyCode::Char('n')), &[], &installed), Action::None);
-        picker.key(key(KeyCode::Delete), &[], &installed);
-        assert_eq!(picker.key(key(KeyCode::Char('y')), &[], &installed), Action::Delete("b".into()));
+        assert_eq!(picker.key(key(KeyCode::Char('x')), &[], &installed), Action::AskDelete("b".into()));
+        assert_eq!(picker.key(key(KeyCode::Delete), &[], &installed), Action::AskDelete("b".into()));
         assert_eq!(picker.key(key(KeyCode::Esc), &[], &installed), Action::Close);
     }
 

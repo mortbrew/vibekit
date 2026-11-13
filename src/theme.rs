@@ -20,7 +20,7 @@ use toml::Value;
 pub struct Palette {
     pub background: Color,
     pub fg: Color,
-    /// Secondary text: hints, labels, the album.
+    /// Secondary text: hints, labels, secondary metadata.
     pub muted: Color,
     /// Background of the selected row and the status bar.
     pub highlight: Color,
@@ -68,7 +68,7 @@ const fn palette(
     }
 }
 
-/// tubevibe's built-in colours.
+/// The default built-in palette (Tokyo Night).
 pub const TOKYO_NIGHT: Palette = palette(
     0x1a1b26,
     0xc0caf5,
@@ -233,7 +233,7 @@ pub fn default_name() -> &'static str {
 /// Theme Select's choice until one is saved.
 pub const FALLBACK: &str = "tokyo-night";
 
-// --- Omarchy theme files (ported from tubevibe's theme.rs) ---
+// --- Omarchy theme files ---
 
 type Rgb = (u8, u8, u8);
 

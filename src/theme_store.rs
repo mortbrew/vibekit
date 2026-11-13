@@ -87,9 +87,23 @@ pub fn built_in_entries() -> Vec<Entry> {
         .collect()
 }
 
-/// The schemes of both sources, on a thread.
-pub fn fetch_catalog(demo: bool) -> Receiver<Msg> {
-    spawn(move || Msg::Catalog(if demo { Ok(demo_catalog()) } else { catalog() }))
+/// Which GitHub catalogs to list in Theme Select Search.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CatalogSources {
+    pub iterm: bool,
+    pub omarchy: bool,
+}
+
+impl CatalogSources {
+    /// iTerm2-Color-Schemes only (Omarchy themes usually come from Auto Mode).
+    pub const ITERM: Self = Self { iterm: true, omarchy: false };
+    /// Both catalogs.
+    pub const BOTH: Self = Self { iterm: true, omarchy: true };
+}
+
+/// The schemes of the chosen sources, on a thread.
+pub fn fetch_catalog(demo: bool, sources: CatalogSources) -> Receiver<Msg> {
+    spawn(move || Msg::Catalog(if demo { Ok(demo_catalog_for(sources)) } else { catalog(sources) }))
 }
 
 /// One scheme's file, checked to be a theme vibekit can read.
@@ -130,17 +144,29 @@ fn get(url: &str) -> Result<String, String> {
     }
 }
 
-fn catalog() -> Result<Vec<Entry>, String> {
-    let iterm = get(ITERM_LIST).map(|t| parse_iterm_list(&t));
-    let omarchy = get(OMARCHY_LIST).map(|t| parse_omarchy_list(&t, OMARCHY_RAW));
-    match (omarchy, iterm) {
-        (Err(a), Err(_)) => Err(a),
-        (a, b) => {
-            let mut all = a.unwrap_or_default();
-            all.extend(b.unwrap_or_default());
-            Ok(all)
+fn catalog(sources: CatalogSources) -> Result<Vec<Entry>, String> {
+    let mut all = Vec::new();
+    let mut err = None;
+    if sources.omarchy {
+        match get(OMARCHY_LIST).map(|t| parse_omarchy_list(&t, OMARCHY_RAW)) {
+            Ok(entries) => all.extend(entries),
+            Err(e) => err = Some(e),
         }
     }
+    if sources.iterm {
+        match get(ITERM_LIST).map(|t| parse_iterm_list(&t)) {
+            Ok(entries) => all.extend(entries),
+            Err(e) => {
+                err = err.or(Some(e));
+            }
+        }
+    }
+    if all.is_empty()
+        && let Some(e) = err
+    {
+        return Err(e);
+    }
+    Ok(all)
 }
 
 fn download(entry: &Entry) -> Result<String, String> {
@@ -201,6 +227,10 @@ pub fn remove(dir: &Path, slug: &str) -> std::io::Result<()> {
 
 /// The catalog shown in demo mode (no network); handy for app tests.
 pub fn demo_catalog() -> Vec<Entry> {
+    demo_catalog_for(CatalogSources::BOTH)
+}
+
+fn demo_catalog_for(sources: CatalogSources) -> Vec<Entry> {
     [
         (Source::Omarchy, "nord"),
         (Source::Omarchy, "rose-pine"),
@@ -209,6 +239,11 @@ pub fn demo_catalog() -> Vec<Entry> {
         (Source::Iterm, "Broken"),
     ]
     .into_iter()
+    .filter(|(source, _)| match source {
+        Source::Iterm => sources.iterm,
+        Source::Omarchy => sources.omarchy,
+        Source::BuiltIn => true,
+    })
     .map(|(source, name)| Entry { source, name: name.into(), url: format!("demo:{name}") })
     .collect()
 }
@@ -281,7 +316,7 @@ mod tests {
     #[test]
     #[ignore]
     fn themes_from_github() {
-        let all = catalog().unwrap();
+        let all = catalog(CatalogSources::BOTH).unwrap();
         let iterm = all.iter().filter(|e| e.source == Source::Iterm).count();
         let omarchy: Vec<_> = all.iter().filter(|e| e.source == Source::Omarchy).collect();
         assert!(iterm > 500 && omarchy.len() > 10, "{iterm} {}", omarchy.len());

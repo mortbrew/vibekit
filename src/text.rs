@@ -37,11 +37,11 @@ fn is_zero_width(c: char) -> bool {
     ) || (c != ' ' && UnicodeWidthChar::width(c) == Some(0))
 }
 
-/// Song and station text made safe for a fixed-width cell: tabs, newlines
-/// and other controls become spaces; zero-width characters go; symbols whose
+/// User-facing text made safe for a fixed-width cell: tabs, newlines and
+/// other controls become spaces; zero-width characters go; symbols whose
 /// drawn width terminals disagree on (one-cell pictographs that foot may draw
 /// as two-cell emoji, Nerd Font glyphs) go too, since a glyph drawn wider
-/// than measured shifts the rest of the row, the rating included.
+/// than measured shifts the rest of the row.
 /// Two-cell emoji (🎵) stay: every terminal agrees on those.
 pub fn clean(text: &str) -> String {
     let mut out = String::with_capacity(text.len());

@@ -3,21 +3,27 @@
 Shared pieces for small ratatui apps (boxvibe, ...):
 
 - `theme`: the theme engine, user themes and Omarchy sync
-- `theme_store`: the online theme catalog (fetch, save, remove)
+- `theme_store`: the online theme catalog (fetch, save, remove); `CatalogSources` picks iTerm and/or Omarchy
 - `picker`: Theme Select: state, fuzzy filter, a key handler returning `Action`s, and `draw`
-- `dialog`: a modal stack over a dimmed screen, `Confirm` (yes/no, quit) and `Help` (`?`)
+- `dialog`: a modal stack over a dimmed screen, `Confirm`, `Ask<T>`, and `Help` (`?`)
 - `toast`: timed, stacked notes
 - `settings`: toggle and picker rows (Theme Select row)
 - `text`: fitting and wrapping text into terminal cells
+- `input`: shared line editor (`TextInput`)
+- `fs`: atomic private writes (`write_private`)
+- `desktop`: Linux `.desktop` entry install / remove (`Entry`)
+- `proc`: zombie-safe detached spawn
+- `time`: UTC ISO-8601 stamps
 - `update`: GitHub self-update check and install via `Release { name, repo, version }`
 
 ## Dialogs
 
 ```rust
-use vibekit::dialog::{Confirm, DialogStack, Help, Response, Section};
+use vibekit::dialog::{Ask, Confirm, DialogStack, Help, Response, Section};
 
 let mut dialogs = DialogStack::new();
 dialogs.push(Confirm::quit("boxvibe"), Instant::now()); // Q again / y quits, n / Esc stays
+dialogs.push(Ask { confirm: Confirm::new("del", "Delete?"), about: slug }, now);
 dialogs.push(Help::new(vec![Section::new("Global", &[("Q", "quit"), ("?", "help")])]), now);
 
 // In the key handler: an open dialog gets every key.
@@ -33,9 +39,15 @@ dialogs.draw(frame, &palette, now);
 - `Confirm::new(id, question)` with `.title(..)` and `.labels(yes, no)`. `y`/`n` answer, Enter presses the chosen
   button (it starts on No), ←/→/Tab/h/l move between them, and other keys do nothing.
   `Confirm::quit(app)` also takes `Q` as yes.
+- `Ask<T>` wraps a `Confirm` with typed context (`about`) the app can read after `Answer`.
 - `Help::new(sections)` scrolls (j/k, PgUp/PgDn, g/G) and closes with `?` or Esc only.
 - Your own dialog: `impl Dialog` (`key` and `draw`) and push it.
-- `dim_at(now)` and `animating(now)` tell you whether to redraw during the fade.
+- `dim` / `dim_at(now)` / `animating(now)`: shared desaturating dim (also for app overlays before `draw_dialogs`).
+
+## Theme Select
+
+- `ThemePicker::key` returns `Action::AskDelete(slug)` on `x` / Delete; the app opens Confirm on the DialogStack.
+- `fetch_catalog(demo, CatalogSources::ITERM)` (or `BOTH`) lists only the chosen sources.
 
 ## Toasts
 
